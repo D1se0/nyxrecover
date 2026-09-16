@@ -1,20 +1,51 @@
 # 🜲 NyxRecover v1.0.1 «Fénix R»
 
-> **Versión de compatibilidad Windows** — corrige el arranque del ejecutable (`ModuleNotFoundError: No module named 'fcntl'`), añade instalador con desinstalación limpia y un icono propio.
+> **Esta versión existe por una razón: el ejecutable de Windows de la v1.0.0 no arrancaba** (`ModuleNotFoundError: No module named 'fcntl'`). Además del arreglo, NyxRecover estrena instalador oficial con desinstalación verificada al 100%.
 
-### Corregido
-- 🪟 **Windows**: el exe ya arranca — imports POSIX (`fcntl`) ahora son condicionales; tamaño de dispositivos vía API Win32; enumeración de discos vía PowerShell/CIM; locks con `msvcrt`.
-- 🪟 **Windows**: crash de la consola legacy (cp1252) con los glifos del banner — UTF-8 forzado + renderizador moderno de Rich.
-- 🖥 **TUI**: los paneles de las pestañas no montaban su contenido (generador en vez de widgets) y faltaba el import de `Switch`.
+## 🔧 Corregido
 
-### Añadido
-- 📦 **Instalador Windows** (Inno Setup): instalación en `Program Files\NyxRecover`, accesos directos, aviso legal, y **desinstalación verificada sin dejar un solo residuo** (probado bajo Wine: 0 ficheros, 0 accesos, 0 claves de registro).
-- 🎨 Icono propio del exe/instalador generado proceduralmente (gradiente cian-violeta).
-- 🤖 El CI hace **smoke test del exe** antes de publicarlo (un exe que no arranca ya no puede llegar a la release).
+### 🪟 El exe de Windows ya arranca
+- **`fcntl` (locks de dispositivo)** → solo en Linux/macOS; en Windows, locks nativos de `msvcrt`.
+- **Tamaño real de discos** → API Win32 (`DeviceIoControl`) en lugar del ioctl de Linux.
+- **Inventario de discos** → PowerShell/CIM (`Win32_DiskDrive`) en Windows; `lsblk` sigue en Linux.
+- **Protección del sistema** → `C:` y `PhysicalDrive0` bloqueados para borrado en Windows.
 
-### Verificación
-- Probado bajo **Wine 10**: CLI completa (audit/devices/recover/keywords/cipher), recuperación real de JPEG+PDF desde el exe de Windows, TUI sin errores, ciclo instalar→desinstalar con cero residuos.
-- 52/52 tests en Linux.
+### 🪟 Crash de la consola con el banner
+La consola legacy de Windows (cp1252) revientaba al pintar el glifo `🜲`. El launcher fuerza UTF-8 y Rich usa su renderizador moderno.
+
+### 🖥 La TUI no mostraba el contenido de las pestañas (también en Linux)
+Los paneles devolvían un generador en vez de widgets y faltaba el import de `Switch`. Ambos fallos corregidos.
+
+## ✨ Añadido
+
+### 📦 Instalador oficial para Windows (Inno Setup)
+- Todo en **una sola carpeta** (`C:\Program Files\NyxRecover`), con licencia GPL y aviso legal.
+- Accesos directos: escritorio, menú Inicio y atajo de consola.
+- **Desinstalador completo** verificado: 0 ficheros, 0 accesos y 0 claves residuales. Los datos forenses del usuario se preservan siempre.
+- Sigue disponible el **zip portable**.
+
+### 🎨 Icono propio y CI reforzado
+- Icono del exe/instalador generado proceduralmente (gradiente cian→violeta).
+- El CI ejecuta un **smoke test del exe** antes de publicarlo: un exe roto ya no llega a la release.
+
+## 🔬 Verificación
+- Bug original **reproducido bajo Wine 10** y verificado desaparecido; CLI completa desde el exe (audit/devices/keywords/cipher); **recuperación real de JPEG+PDF** desde el exe de Windows; TUI sin errores; ciclo instalar→desinstalar con el setup de la CI: **cero residuos**.
+- **52/52 tests** en Linux (ext4, FAT32, NTFS reales).
+
+## 📦 Descargas
+
+| Plataforma | Archivo | Tamaño | SHA-256 |
+|---|---|---|---|
+| 🪟 Windows x64 **(instalador)** | `NyxRecover-1.0.1-windows-x64-setup.exe` | 16,2 MB | `c7e9cb8430501f687729330837a2e026939c5074ff15386b0fb789ae6a81b2a2` |
+| 🪟 Windows x64 (portable) | `NyxRecover-v1.0.1-windows-x64.zip` | 14,3 MB | `fdd2afa388f8d8ad18477399daa226c0f3df598cdb9b1e903a672753b4814228` |
+| 🐧 Linux | `nyxrecover_1.0.1_all.deb` | 47,2 KB | `a90aac78d82adb68f12c9bbd9f65292662f84061c359044833cd3a0e8b14f52e` |
+| 🍎 macOS | `NyxRecover-v1.0.1-macos.zip` | 13,5 MB | `3bc0a7bc9707812a2aa94047a4c9e1c7044924c11bbb14dfb4c8cdff6d073538` |
+
+> ⬆️ **Si tenías la v1.0.0 en Windows**: borra el exe viejo y usa esta (setup o portable). En Linux: `sudo dpkg -i nyxrecover_1.0.1_all.deb`.
+
+## 📚 Documentación
+
+Guía completa comando a comando: **https://d1se0.github.io/nyxrecover/#docs**
 
 ---
 
@@ -69,7 +100,9 @@ NyxRecover nace de una idea simple: **lo que borras de un disco nunca se va del 
 | 🪟 Windows x64 | `NyxRecover-v1.0.0-windows-x64.zip` | 14,3 MB | `daa6a4c64e9a5a2ec9e109c9b15073e5e146946939d2270c0a8152bd51be89d7` |
 | 🍎 macOS | `NyxRecover-v1.0.0-macos.zip` | 13,5 MB | `6485cb3dcac2249b14f82ecea5dc9b47e5306ab0dca5684e61e73a9e4204aaa9` |
 
-> Comprueba el hash de tu descarga con `sha256sum <archivo>` (Linux/macOS) o `Get-FileHash <archivo> -Algorithm SHA256` (PowerShell).
+> ⚠ **Nota Windows**: el exe de esta versión tiene un fallo de arranque. **Usa la [v1.0.1](https://github.com/D1se0/nyxrecover/releases/tag/v1.0.1)**, que lo corrige y añade instalador oficial.
+
+Comprueba tu descarga: `sha256sum <archivo>` (Linux/macOS) · `Get-FileHash <archivo> -Algorithm SHA256` (PowerShell).
 
 ---
 
