@@ -1,7 +1,17 @@
 import React from 'react'
-import { REPO, useReveal, useReleases, assetFor, fmtBytes } from './lib.jsx'
+import { REPO, useReveal, assetFor, fmtBytes } from './lib.jsx'
 
-function DownloadButton({ releases, loading }) {
+function detectOSSafe() {
+  try {
+    const ua = navigator.userAgent
+    if (/Windows NT/i.test(ua)) return { id: 'windows', label: 'Windows', icon: '🪟' }
+    if (/Mac OS X|Macintosh/i.test(ua)) return { id: 'macos', label: 'macOS', icon: '🍎' }
+    if (/Linux/i.test(ua)) return { id: 'linux', label: 'Linux', icon: '🐧' }
+    return { id: 'unknown', label: 'tu sistema', icon: '💻' }
+  } catch { return { id: 'unknown', label: 'tu sistema', icon: '💻' } }
+}
+
+function DownloadButton({ releases, loading, version }) {
   const os = React.useMemo(() => detectOSSafe(), [])
   const [busy, setBusy] = React.useState(false)
 
@@ -14,7 +24,7 @@ function DownloadButton({ releases, loading }) {
   const url = asset?.browser_download_url
   const label = loading ? 'Buscando la última release…'
     : url ? `Descargar para ${os.label} · ${fmtBytes(asset.size)}`
-    : 'Ver releases en GitHub'
+    : `Descargar v${version} para ${os.label}`
 
   function go() {
     setBusy(true)
@@ -32,7 +42,7 @@ function DownloadButton({ releases, loading }) {
       <span className="flex flex-col items-start leading-tight">
         <span>{busy ? 'Abriendo…' : label}</span>
         <span className="text-xs font-medium opacity-70">
-          gratis · open source · sin registro
+          v{version} · gratis · open source · sin registro
         </span>
       </span>
       <span className="ml-1 text-xl transition-transform group-hover:translate-x-1">→</span>
@@ -40,18 +50,7 @@ function DownloadButton({ releases, loading }) {
   )
 }
 
-function detectOSSafe() {
-  try {
-    // import perezoso para evitar dependencia circular en HMR
-    const ua = navigator.userAgent
-    if (/Windows NT/i.test(ua)) return { id: 'windows', label: 'Windows', icon: '🪟' }
-    if (/Mac OS X|Macintosh/i.test(ua)) return { id: 'macos', label: 'macOS', icon: '🍎' }
-    if (/Linux/i.test(ua)) return { id: 'linux', label: 'Linux', icon: '🐧' }
-    return { id: 'unknown', label: 'tu sistema', icon: '💻' }
-  } catch { return { id: 'unknown', label: 'tu sistema', icon: '💻' } }
-}
-
-export default function Hero({ releases, loading }) {
+export default function Hero({ releases, loading, version = '1.0.0' }) {
   useReveal()
   return (
     <header className="relative min-h-[92vh] overflow-hidden">
@@ -74,7 +73,7 @@ export default function Hero({ releases, loading }) {
           <div className="relative p-5 font-mono text-[13px] leading-6 text-emerald-300/90">
             <div className="absolute inset-x-0 h-10 bg-gradient-to-b from-cyan-400/10 to-transparent animate-scan" />
             <p className="text-slate-400">$ sudo nyx recover /dev/sdb1 -m smart</p>
-            <p>🜲 NyxRecover v1.0.0</p>
+            <p>🜲 NyxRecover v{version}</p>
             <p className="text-cyan-300">▸ 12.4 GB escaneados · 71 MB/s</p>
             <p className="text-emerald-400">✔ 3 archivos borrados recuperados</p>
             <p className="text-violet-300">▸ timeline: 1.204 eventos</p>
@@ -90,7 +89,7 @@ export default function Hero({ releases, loading }) {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
           </span>
-          v1.0.0 · GRATIS y con más funciones que herramientas de pago
+          v{version} · GRATIS y con más funciones que herramientas de pago
         </div>
 
         <h1 className="reveal max-w-3xl text-5xl font-black leading-[1.05] tracking-tight sm:text-7xl">
@@ -105,7 +104,7 @@ export default function Hero({ releases, loading }) {
         </p>
 
         <div className="reveal mt-9 flex flex-wrap items-center gap-4">
-          <DownloadButton releases={releases} loading={loading} />
+          <DownloadButton releases={releases} loading={loading} version={version} />
           <a href="#funciones"
              className="rounded-2xl px-6 py-4 font-semibold glass hover:bg-slate-700/30 transition">
             Explorar funciones ↓
