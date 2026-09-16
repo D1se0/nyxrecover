@@ -1,8 +1,9 @@
 """NyxRecover launcher — PyInstaller entrypoint.
 
 Usage:
-  NyxRecover.exe            → TUI (interactive dark interface)
-  NyxRecover.exe --cli …    → CLI passthrough
+  NyxRecover.exe            → App de escritorio (ventana, recomendado)
+  NyxRecover.exe --tui      → TUI interactiva en terminal
+  NyxRecover.exe --cli …    → CLI para scripts
 """
 import os
 import sys
@@ -28,9 +29,20 @@ def main():
         sys.argv = ["nyx"] + args[1:]
         from nyx.nyxcore.cli import main as cli_main
         cli_main()
-    else:
+    elif args and args[0] == "--tui":
+        sys.argv = ["nyx-tui"] + args[1:]
         from nyx.nyxcore.tui import main as tui_main
         tui_main()
+    else:
+        try:
+            from nyx.nyxcore.gui import main as gui_main
+            gui_main()
+        except Exception as e:
+            # sin display (p. ej. SSH sin X): caer a la TUI con aviso claro
+            print(f"No se pudo abrir la ventana ({e}). "
+                  f"Abriendo la interfaz de terminal (TUI)…")
+            from nyx.nyxcore.tui import main as tui_main
+            tui_main()
 
 
 if __name__ == "__main__":

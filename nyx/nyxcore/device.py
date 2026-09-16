@@ -254,6 +254,11 @@ def list_devices() -> list:
 
 
 def get_device(node_or_name: str) -> Device:
+    # ficheros regulares (imágenes .img/.dd/.raw) primero, con su ruta tal cual
+    if node_or_name and not node_or_name.startswith("/dev/") \
+            and os.path.isfile(node_or_name):
+        return Device(name=Path(node_or_name).name, node=node_or_name,
+                      size=media_size(node_or_name))
     node = node_or_name if node_or_name.startswith("/dev/") else f"/dev/{node_or_name}"
     for d in list_devices():
         if d.node == node or d.name == Path(node).name:

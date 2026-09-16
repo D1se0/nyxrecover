@@ -49,16 +49,15 @@ Name: "desktopicon"; Description: "Crear acceso directo en el &escritorio"; \
 
 [Files]
 Source: "..\dist\NyxRecover.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\NyxRecover-cli.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\docs\web\*"; DestDir: "{app}\docs"; Flags: skipifsourcedoesntexist recursesubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; \
-    Comment: "Recuperación forense de datos borrados y borrado seguro"
-Name: "{group}\{#MyAppName} (consola)"; Filename: "{cmd}"; \
-    Parameters: "/k ""{app}\{#MyAppExeName}"" --cli devices"; \
-    Comment: "NyxRecover en modo línea de comandos"
+    Comment: "Recuperacion forense de datos borrados y borrado seguro"
+Name: "{group}\{#MyAppName} (consola CLI)"; Filename: "{app}\NyxRecover-cli.exe"; \
+    Comment: "NyxRecover en modo linea de comandos"
 Name: "{group}\Desinstalar {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; \
     Tasks: desktopicon

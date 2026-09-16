@@ -43,27 +43,27 @@ const INSTALL = {
     steps: [
       ['1', 'Descarga el .deb desde la última release (botón de arriba).'],
       ['2', 'Instala: sudo dpkg -i nyxrecover_*_all.deb (o doble clic).'],
-      ['3', 'Lanza la interfaz: sudo nyx-tui — o la CLI: sudo nyx --help.'],
+      ['3', 'Abre NyxRecover desde tu menú de aplicaciones — o lanza nyx-app. Terminal: nyx-tui · nyx.'],
     ],
-    note: 'También tienes ./packaging/install.sh para instalar en ~/.nyxrecover sin root.',
+    note: 'La app de escritorio pide tu contraseña (pkexec/sudo) al operar sobre discos físicos.',
   },
   windows: {
     icon: '🪟', label: 'Windows',
     steps: [
-      ['1', 'Descarga NyxRecover-*-windows-x64.zip de la release.'],
-      ['2', 'Descomprime y ejecuta NyxRecover.exe — no necesita instalación.'],
-      ['3', 'Modo consola: NyxRecover.exe --cli devices'],
+      ['1', 'Descarga y ejecuta el instalador NyxRecover-*-setup.exe (o el zip portable).'],
+      ['2', 'Se abre la app con ventana propia: Panel, Recuperar, Analizar y Borrar.'],
+      ['3', 'Modo consola para scripts: NyxRecover-cli.exe devices (ejecuta como Administrador).'],
     ],
-    note: 'Para rescatar discos físicos ejecuta como Administrador.',
+    note: 'Para rescatar discos físicos ejecuta la app como Administrador.',
   },
   macos: {
     icon: '🍎', label: 'macOS',
     steps: [
-      ['1', 'Descarga NyxRecover-*-macos.zip de la release.'],
-      ['2', 'Descomprime, chmod +x NyxRecover y ejecútalo con sudo.'],
-      ['3', 'discos: ls /dev/disk* — recuperación: sudo ./NyxRecover --cli recover /dev/disk4s1'],
+      ['1', 'Descarga NyxRecover-*-macos.zip y descomprímelo.'],
+      ['2', 'Abre NyxRecover.app (clic derecho → Abrir la primera vez, por Gatekeeper).'],
+      ['3', 'Para discos físicos: sudo ./NyxRecover-cli recover /dev/disk4s1'],
     ],
-    note: 'Primer arranque: clic derecho → Abrir para saltarte Gatekeeper.',
+    note: 'La app de ventana no necesita sudo para imágenes; los discos físicos sí.',
   },
 }
 

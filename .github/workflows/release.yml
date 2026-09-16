@@ -29,20 +29,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Build exe + instalador
+      - name: Build app + CLI + instalador
         shell: pwsh
         run: |
           python -m venv .venv-win
           .venv-win\Scripts\pip install -q --upgrade pip
-          .venv-win\Scripts\pip install -q textual rich pyinstaller
-          .venv-win\Scripts\pyinstaller --name NyxRecover --onefile --console `
+          .venv-win\Scripts\pip install -q customtkinter pillow textual rich pyinstaller
+          # App de escritorio (ventana)
+          .venv-win\Scripts\pyinstaller --name NyxRecover --onefile --noconsole `
             --icon assets\nyx.ico `
-            --add-data "nyx;nyx" --collect-all textual --collect-all rich `
+            --add-data "nyx;nyx" --collect-all customtkinter --collect-all textual --collect-all rich `
             --distpath dist nyx/launcher.py
-          # smoke test del exe recién nacido: debe arrancar sin ModuleNotFoundError
-          & dist\NyxRecover.exe --cli audit 2>&1 | Tee-Object -Variable smoke
-          if ($LASTEXITCODE -ne 0) { throw "Smoke test del exe falló" }
-          Compress-Archive -Path dist\NyxRecover.exe -DestinationPath dist\NyxRecover-${{ github.ref_name }}-windows-x64.zip -Force
+          # CLI (consola)
+          .venv-win\Scripts\pyinstaller --name NyxRecover-cli --onefile --console `
+            --icon assets\nyx.ico `
+            --add-data "nyx;nyx" --collect-all customtkinter --collect-all textual --collect-all rich `
+            --distpath dist nyx/launcher.py
+          # smoke test del CLI (la app de ventana requiere sesión gráfica)
+          & dist\NyxRecover-cli.exe --cli audit 2>&1 | Tee-Object -Variable smoke
+          if ($LASTEXITCODE -ne 0) { throw "Smoke test del CLI fallo" }
+          Compress-Archive -Path dist\NyxRecover.exe, dist\NyxRecover-cli.exe -DestinationPath dist\NyxRecover-${{ github.ref_name }}-windows-x64.zip -Force
           # instalador Inno Setup
           choco install innosetup -y --no-progress
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
@@ -61,15 +67,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Build binario macOS
+      - name: Build .app de ventana + CLI (macOS)
         run: |
           python3 -m venv .venv-mac
           .venv-mac/bin/pip install -q --upgrade pip
-          .venv-mac/bin/pip install -q textual rich pyinstaller
-          .venv-mac/bin/pyinstaller --name NyxRecover --onefile --console \
-            --add-data "nyx:nyx" --collect-all textual --collect-all rich \
+          .venv-mac/bin/pip install -q customtkinter pillow textual rich pyinstaller
+          # App de ventana (.bundle)
+          .venv-mac/bin/pyinstaller --name NyxRecover --windowed \
+            --osx-bundle-identifier com.d1se0.nyxrecover \
+            --add-data "nyx:nyx" --collect-all customtkinter --collect-all textual --collect-all rich \
             --distpath dist nyx/launcher.py
-          zip -j dist/NyxRecover-${{ github.ref_name }}-macos.zip dist/NyxRecover
+          # CLI (consola)
+          .venv-mac/bin/pyinstaller --name NyxRecover-cli --onefile --console \
+            --add-data "nyx:nyx" --collect-all customtkinter --collect-all textual --collect-all rich \
+            --distpath dist nyx/launcher.py
+          zip -qry dist/NyxRecover-${{ github.ref_name }}-macos.zip dist/NyxRecover.app dist/NyxRecover-cli
       - uses: actions/upload-artifact@v4
         with:
           name: nyxrecover-macos
