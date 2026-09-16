@@ -1,3 +1,54 @@
+# 🜲 NyxRecover v1.1.0 «Aurora» — ¡App de escritorio!
+
+> **NyxRecover ya no vive en la terminal: estrena ventana propia en Windows, Linux y macOS**, con el mismo motor forense debajo y una interfaz dark-glass que cualquiera puede usar.
+
+## ✨ La nueva aplicación de escritorio
+
+App nativa (CustomTkinter) con 5 secciones:
+- **Panel** — discos en tarjetas clicables con KPIs en vivo y nivel de riesgo (CRÍTICO/ALTO/MEDIO).
+- **Recuperar** — modo Inteligente/FS/carving, opción *solo eliminados*, selector de carpeta y barra de progreso real.
+- **Analizar** — timeline forense (CSV), keywords en crudo y detección de cifrado.
+- **Borrar** — método NIST/DoD/CSPRNG/Gutmann, verificación por muestreo, modo *solo espacio libre* y **doble alerta** (aviso previo + frase de confirmación escrita). Disco del sistema bloqueado.
+- **Registro** — todo con colores por evento y journal con hash-chain SHA-256.
+
+Los motores corren en hilos: **la ventana nunca se congela**.
+
+## 📦 Qué se instala en cada sistema
+
+| Plataforma | Instalador | Qué obtienes |
+|---|---|---|
+| 🪟 Windows | `setup.exe` / zip | **NyxRecover.exe** (ventana, icono propio) + `NyxRecover-cli.exe` |
+| 🐧 Linux | `.deb` | **nyx-app** + entrada de menú con icono + `nyx-tui` + `nyx` |
+| 🍎 macOS | zip | **NyxRecover.app** de ventana + `NyxRecover-cli` |
+
+## 🔧 Internas
+- `get_device()` acepta imágenes `.img/.dd/.raw` por ruta absoluta en toda la app.
+- Launcher con fallback automático a TUI si no hay pantalla (SSH sin X).
+
+## 🔬 Verificación
+- **Self-test automatizado de la GUI** (`tools/gui_selftest.py`) bajo Xvfb: recorre las 5 páginas, **recuperación real desde la ventana** (JPEG tallado), flujo de borrado completo (frase incorrecta rechazada / correcta ejecutada y verificada a 0 bytes) y journal íntegro.
+- App del `.deb` abre ventana y CLI ok como root.
+- **El exe de Windows de ventana renderiza bajo Wine** (verificación analítica por píxeles).
+- El `setup.exe` del CI: instalar → CLI recupera 2 archivos reales → desinstalar → **cero residuos**.
+- **52/52 tests** del núcleo en verde.
+
+## 📦 Descargas
+
+| Plataforma | Archivo | Tamaño | SHA-256 |
+|---|---|---|---|
+| 🪟 Windows (instalador) | `NyxRecover-1.1.0-windows-x64-setup.exe` | 51,4 MB | `1b3e981f177545a954222f8e70590139691972002ac1f9de0dbbe5250119e29c` |
+| 🪟 Windows (portable) | `NyxRecover-v1.1.0-windows-x64.zip` | 49,6 MB | `5bdc438fe1098f5240bc79433b9fa4762876f21324d61fe2facad0b0dbb9076e` |
+| 🐧 Linux | `nyxrecover_1.1.0_all.deb` | 53,2 KB | `6708b4943bd32493e56cfb84334ba3f4de1bf0b2a11a0ca70c0b8502b3105911` |
+| 🍎 macOS | `NyxRecover-v1.1.0-macos.zip` | 43,9 MB | `bb0a6bff7b8a2563393b716f151a260bbdfa8e860e7c16cdc568d7f2d13e0056` |
+
+> Los tamaños crecen respecto a v1.0.x porque la app de escritorio viaja dentro.
+
+## 📚 Documentación
+
+**https://d1se0.github.io/nyxrecover/#docs**
+
+---
+
 # 🜲 NyxRecover v1.0.1 «Fénix R»
 
 > **Esta versión existe por una razón: el ejecutable de Windows de la v1.0.0 no arrancaba** (`ModuleNotFoundError: No module named 'fcntl'`). Además del arreglo, NyxRecover estrena instalador oficial con desinstalación verificada al 100%.
