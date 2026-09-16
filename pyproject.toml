@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nyxrecover"
+version = "1.0.0"
+description = "NyxRecover — recuperación forense de datos borrados y borrado seguro, con TUI oscura"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "GPL-3.0-only" }
+authors = [{ name = "NyxRecover Team" }]
+dependencies = ["textual>=0.60", "rich>=13.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pyinstaller>=6.0"]
+
+[project.scripts]
+nyx = "nyx.nyxcore.cli:main"
+nyx-tui = "nyx.nyxcore.tui:main"
+
+[tool.setuptools.packages.find]
+include = ["nyx*"]
+
+[tool.pytest.ini_options]
+testpaths = ["nyx/tests"]
+addopts = "-q"

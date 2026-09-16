@@ -1,0 +1,82 @@
+name: 🜲 Release NyxRecover
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir .deb
+        run: |
+          chmod +x packaging/build-deb.sh
+          ./packaging/build-deb.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nyxrecover-deb
+          path: dist/*.deb
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build exe portable
+        shell: pwsh
+        run: |
+          python -m venv .venv-win
+          .venv-win\Scripts\pip install -q --upgrade pip
+          .venv-win\Scripts\pip install -q textual rich pyinstaller
+          .venv-win\Scripts\pyinstaller --name NyxRecover --onefile --console `
+            --add-data "nyx;nyx" --collect-all textual --collect-all rich `
+            --distpath dist nyx/launcher.py
+          Compress-Archive -Path dist\NyxRecover.exe -DestinationPath dist\NyxRecover-${{ github.ref_name }}-windows-x64.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nyxrecover-windows
+          path: dist/NyxRecover-*.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build binario macOS
+        run: |
+          python3 -m venv .venv-mac
+          .venv-mac/bin/pip install -q --upgrade pip
+          .venv-mac/bin/pip install -q textual rich pyinstaller
+          .venv-mac/bin/pyinstaller --name NyxRecover --onefile --console \
+            --add-data "nyx:nyx" --collect-all textual --collect-all rich \
+            --distpath dist nyx/launcher.py
+          zip -j dist/NyxRecover-${{ github.ref_name }}-macos.zip dist/NyxRecover
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nyxrecover-macos
+          path: dist/NyxRecover-*-macos.zip
+
+  release:
+    needs: [build-linux-deb, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/nyxrecover-deb/*.deb
+            artifacts/nyxrecover-windows/*.zip
+            artifacts/nyxrecover-macos/*.zip
+          generate_release_notes: true

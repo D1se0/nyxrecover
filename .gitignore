@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.venv-win/
+.venv-mac/
+.pytest_cache/
+build/
+dist/
+*.spec
+
+# Node
+web/node_modules/
+web/dist/
+
+# Nyx runtime
+nyx_recuperados/
+nyx_informes/
+.nyxrecover/
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Secretos/local
+*.local
+.env
