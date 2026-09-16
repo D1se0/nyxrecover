@@ -1,3 +1,23 @@
+# 🜲 NyxRecover v1.0.1 «Fénix R»
+
+> **Versión de compatibilidad Windows** — corrige el arranque del ejecutable (`ModuleNotFoundError: No module named 'fcntl'`), añade instalador con desinstalación limpia y un icono propio.
+
+### Corregido
+- 🪟 **Windows**: el exe ya arranca — imports POSIX (`fcntl`) ahora son condicionales; tamaño de dispositivos vía API Win32; enumeración de discos vía PowerShell/CIM; locks con `msvcrt`.
+- 🪟 **Windows**: crash de la consola legacy (cp1252) con los glifos del banner — UTF-8 forzado + renderizador moderno de Rich.
+- 🖥 **TUI**: los paneles de las pestañas no montaban su contenido (generador en vez de widgets) y faltaba el import de `Switch`.
+
+### Añadido
+- 📦 **Instalador Windows** (Inno Setup): instalación en `Program Files\NyxRecover`, accesos directos, aviso legal, y **desinstalación verificada sin dejar un solo residuo** (probado bajo Wine: 0 ficheros, 0 accesos, 0 claves de registro).
+- 🎨 Icono propio del exe/instalador generado proceduralmente (gradiente cian-violeta).
+- 🤖 El CI hace **smoke test del exe** antes de publicarlo (un exe que no arranca ya no puede llegar a la release).
+
+### Verificación
+- Probado bajo **Wine 10**: CLI completa (audit/devices/recover/keywords/cipher), recuperación real de JPEG+PDF desde el exe de Windows, TUI sin errores, ciclo instalar→desinstalar con cero residuos.
+- 52/52 tests en Linux.
+
+---
+
 # 🜲 NyxRecover v1.0.0 «Fénix»
 
 > **Recuperación forense de datos borrados + borrado seguro certificado — gratis, open source y sin telemetría.**

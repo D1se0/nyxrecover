@@ -6,7 +6,6 @@ safety layer to compute risk levels before touching a single byte.
 """
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import re
@@ -15,7 +14,20 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-BLKGETSIZE64 = 0x80081272
+IS_WINDOWS = os.name == "nt"
+
+if not IS_WINDOWS:
+    import fcntl
+    BLKGETSIZE64 = 0x80081272
+else:
+    import ctypes
+    from ctypes import wintypes
+    fcntl = None
+    BLKGETSIZE64 = 0x80081272
+    IOCTL_DISK_GET_LENGTH_INFO = 0x0007405C
+    GENERIC_READ = 0x80000000
+    OPEN_EXISTING = 3
+    FILE_SHARE_READ_WRITE = 1 | 2
 
 SYSBLOCK = Path("/sys/block")
 _UDEV_PROPS = (
@@ -88,9 +100,37 @@ def human_size(n: int) -> str:
     return f"{x:,.1f} TB"
 
 
+def _win_device_size(path: str) -> int | None:
+    """Size of \\\\.\\PhysicalDriveN or \\\\.\\X: via Win32 API."""
+    if not re.match(r"^\\\\\\.\\(PHYSICALDRIVE\d+|[A-Za-z]:)$", path, re.I):
+        return None
+    try:
+        h = ctypes.windll.kernel32.CreateFileW(path, GENERIC_READ,
+                                               FILE_SHARE_READ_WRITE, None,
+                                               OPEN_EXISTING, 0, None)
+        if h == -1 or h == 0xFFFFFFFFFFFFFFFF:
+            return None
+        try:
+            buf = ctypes.create_string_buffer(8)
+            got = wintypes.DWORD()
+            ok = ctypes.windll.kernel32.DeviceIoControl(
+                h, IOCTL_DISK_GET_LENGTH_INFO, None, 0, buf, 8,
+                ctypes.byref(got), None)
+            return struct.unpack("q", buf.raw)[0] if ok else None
+        finally:
+            ctypes.windll.kernel32.CloseHandle(h)
+    except Exception:
+        return None
+
+
 def media_size(path: str) -> int:
-    """True size of a file OR block device (st_size is 0 for block devs)."""
+    """True size of a file OR block/volume device (st_size is 0 for devs)."""
     import stat as statmod
+    if IS_WINDOWS:
+        w = _win_device_size(path)
+        if w is not None:
+            return w
+        return os.stat(path).st_size
     st = os.stat(path)
     if statmod.S_ISBLK(st.st_mode):
         with open(path, "rb", buffering=0) as fh:
@@ -108,6 +148,11 @@ def _read(path: Path) -> str:
 
 def system_roots() -> set:
     roots = set()
+    if IS_WINDOWS:
+        roots.add("\\\\.\\PHYSICALDRIVE0")
+        sysdrv = os.environ.get("SystemDrive", "C:").rstrip("\\")
+        roots.add(f"\\\\.\\{sysdrv}")
+        return roots
     try:
         out = subprocess.run(["findmnt", "-rn", "-o", "SOURCE,TARGET", "/"],
                              capture_output=True, text=True, timeout=10).stdout
@@ -123,7 +168,25 @@ def system_roots() -> set:
     return roots
 
 
+def _win_disks() -> list:
+    """Best-effort Windows disk enumeration via PowerShell/CIM."""
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_DiskDrive | Select-Object DeviceID,Size,"
+             "Model,InterfaceType,SerialNumber,MediaType | ConvertTo-Json"],
+            capture_output=True, text=True, timeout=30)
+        data = json.loads(out.stdout or "null")
+        if isinstance(data, dict):
+            data = [data]
+        return data or []
+    except Exception:
+        return []
+
+
 def _lsblk() -> list:
+    if IS_WINDOWS:
+        return _win_disks()
     try:
         out = subprocess.run(
             ["lsblk", "-Jb", "-o",
@@ -140,6 +203,18 @@ def list_devices() -> list:
     """All physical/loop devices with their partitions."""
     devices = []
     for dev in _lsblk():
+        if IS_WINDOWS:
+            d = Device(
+                name=str(dev.get("DeviceID") or "").replace("\\\\.\\", ""),
+                node=str(dev.get("DeviceID") or ""),
+                size=int(dev.get("Size") or 0),
+                model=(str(dev.get("Model") or "").strip()),
+                bus=str(dev.get("InterfaceType") or "unknown").lower(),
+                serial=(str(dev.get("SerialNumber") or "").strip()),
+            )
+            d.index = dev.get("Index")
+            devices.append(d)
+            continue
         if dev.get("type") != "disk":
             continue
         name = dev.get("name", "")

@@ -23,7 +23,7 @@ from nyx.nyxcore.cipher import detect as cipher_detect, entropy_map
 from nyx.nyxcore.device import human_size
 from nyx.nyxwipe.engine import wipe_device, wipe_freespace
 
-console = Console()
+console = Console(legacy_windows=False)  # evita el renderer legacy de Win (cp1252)
 
 
 def _die(msg: str, code: int = 2):

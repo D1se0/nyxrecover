@@ -18,8 +18,8 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import (Button, DataTable, Footer, Header, Input, Label,
-                             ProgressBar, RichLog, Select, Static, TabbedContent,
-                             TabPane)
+                             ProgressBar, RichLog, Select, Static, Switch,
+                             TabbedContent, TabPane)
 
 from nyx.nyxcore.version import APP_NAME, VERSION, TAGLINE
 from nyx.nyxcore import device as devmod, safety, audit, report
@@ -198,13 +198,13 @@ class NyxApp(App):
                 yield Static("—", id="devinfo", markup=True)
             with TabbedContent(id="workspace", initial="tab-dash"):
                 with TabPane("◧ Panel", id="tab-dash"):
-                    yield self._dash_pane()
+                    yield from self._dash_pane()
                 with TabPane("⟲ Recuperar", id="tab-rec"):
-                    yield self._rec_pane()
+                    yield from self._rec_pane()
                 with TabPane("🔍 Analizar", id="tab-ana"):
-                    yield self._ana_pane()
+                    yield from self._ana_pane()
                 with TabPane("🔥 Borrar", id="tab-wipe"):
-                    yield self._wipe_pane()
+                    yield from self._wipe_pane()
                 with TabPane("▤ Registro", id="tab-log"):
                     yield RichLog(highlight=False, markup=True, classes="log grow", id="mainlog")
         yield Footer()

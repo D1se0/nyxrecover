@@ -8,12 +8,20 @@ Nothing in NyxRecover touches a device without passing through here:
 from __future__ import annotations
 
 import errno
-import fcntl
+import os
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .device import Device, get_device, mounted_mountpoints
+from .device import (Device, get_device, mounted_mountpoints, media_size,
+                     human_size)
+
+IS_WINDOWS = os.name == "nt"
+if not IS_WINDOWS:
+    import fcntl
+else:
+    import msvcrt
 
 LOCK_DIR = Path.home() / ".nyxrecover" / "locks"
 
@@ -39,7 +47,42 @@ class RiskReport:
         return f"ELIMINAR {Path(self.device.node).name.upper()}"
 
 
+def _mounted_windows() -> list:
+    """Drive letters Windows currently mounts (fixed disks)."""
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_LogicalDisk -Filter \"DriveType=3\" "
+             "| Select-Object -ExpandProperty DeviceID"],
+            capture_output=True, text=True, timeout=30)
+        return [l.strip() for l in out.stdout.splitlines() if l.strip()]
+    except Exception:
+        return []
+
+
+def _assess_windows(node: str, wipe: bool) -> RiskReport:
+    """Risk evaluation on Windows: C:/PHYSICALDRIVE0 are off-limits."""
+    sysdrive = os.environ.get("SystemDrive", "C:").upper().rstrip("\\")
+    nd = node.upper().replace("\\\\.\\", "")
+    if nd in ("PHYSICALDRIVE0", sysdrive):
+        level, label = 3, "CRÍTICO — dispositivo del sistema"
+        blockers = ["Es el dispositivo del sistema de Windows"]
+    else:
+        level, label = 2, "ALTO — volumen del sistema operativo"
+        blockers = []
+    warnings = [f"Volumen: {node}",
+                "Ejecuta como Administrador para acceso de bloque al disco"]
+    try:
+        warnings.append(f"Tamaño: {human_size(media_size(node))}")
+    except Exception:
+        pass
+    dev = Device(name=Path(node).name, node=node, size=0)
+    return RiskReport(dev, level, label, blockers, warnings)
+
+
 def assess(node: str, wipe: bool = False) -> RiskReport:
+    if IS_WINDOWS:
+        return _assess_windows(node, wipe)
     dev = get_device(node)
     blockers, warnings = [], []
     mps = mounted_mountpoints(dev.node)
@@ -68,6 +111,8 @@ def require_phrase(report: RiskReport, typed: str) -> None:
 
 
 def umount_all(node: str) -> dict:
+    if IS_WINDOWS:
+        return {"umounted": [], "failed": []}
     base = Path(node).name
     targets = set(mounted_mountpoints(node))
     try:
@@ -99,20 +144,30 @@ class DeviceLock:
 
     def __enter__(self):
         LOCK_DIR.mkdir(parents=True, exist_ok=True)
-        name = "lock-" + self.node.replace("/", "_")
+        name = "lock-" + re.sub(r"[^A-Za-z0-9._-]", "_", self.node)
         self._fh = open(LOCK_DIR / name, "w")
         try:
-            fcntl.flock(self._fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if IS_WINDOWS:
+                self._fh.write("0")
+                self._fh.flush()
+                self._fh.seek(0)
+                msvcrt.locking(self._fh.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                fcntl.flock(self._fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as e:
             self._fh.close()
-            if e.errno in (errno.EACCES, errno.EAGAIN):
+            if e.errno in (errno.EACCES, errno.EAGAIN, errno.EDEADLOCK):
                 raise SafetyError(f"Otro proceso ya está usando {self.node}")
             raise
         return self
 
     def __exit__(self, *exc):
         try:
-            fcntl.flock(self._fh, fcntl.LOCK_UN)
+            if IS_WINDOWS:
+                self._fh.seek(0)
+                msvcrt.locking(self._fh.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(self._fh, fcntl.LOCK_UN)
         finally:
             self._fh.close()
         return False

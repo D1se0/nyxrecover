@@ -29,20 +29,30 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Build exe portable
+      - name: Build exe + instalador
         shell: pwsh
         run: |
           python -m venv .venv-win
           .venv-win\Scripts\pip install -q --upgrade pip
           .venv-win\Scripts\pip install -q textual rich pyinstaller
           .venv-win\Scripts\pyinstaller --name NyxRecover --onefile --console `
+            --icon assets\nyx.ico `
             --add-data "nyx;nyx" --collect-all textual --collect-all rich `
             --distpath dist nyx/launcher.py
+          # smoke test del exe recién nacido: debe arrancar sin ModuleNotFoundError
+          & dist\NyxRecover.exe --cli audit 2>&1 | Tee-Object -Variable smoke
+          if ($LASTEXITCODE -ne 0) { throw "Smoke test del exe falló" }
           Compress-Archive -Path dist\NyxRecover.exe -DestinationPath dist\NyxRecover-${{ github.ref_name }}-windows-x64.zip -Force
+          # instalador Inno Setup
+          choco install innosetup -y --no-progress
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          & $iscc /DAppVersion=$("${{ github.ref_name }}".TrimStart("v")) packaging\windows-installer.iss
       - uses: actions/upload-artifact@v4
         with:
           name: nyxrecover-windows
-          path: dist/NyxRecover-*.zip
+          path: |
+            dist/NyxRecover-*-x64.zip
+            dist/NyxRecover-*-x64-setup.exe
 
   build-macos:
     runs-on: macos-latest
@@ -77,6 +87,6 @@ jobs:
         with:
           files: |
             artifacts/nyxrecover-deb/*.deb
-            artifacts/nyxrecover-windows/*.zip
+            artifacts/nyxrecover-windows/*
             artifacts/nyxrecover-macos/*.zip
           generate_release_notes: true
